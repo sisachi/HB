@@ -317,12 +317,15 @@ function renderTimeline() {
       <div class="timeline-year">${item.year}</div>
       <div class="timeline-title">${item.title}</div>
       <div class="timeline-desc">${item.desc}</div>
-      <img class="timeline-img" src="${item.img}" alt="${item.title}"
+      <img class="timeline-img"
+           src="${item.img}"
+           alt="${item.title}"
+           loading="lazy"
+           decoding="async"
            onerror="this.style.display='none'" />
     </div>
   `).join("");
 }
-
 /* ========== 5. 信 ========== */
 function showLetter() {
   document.getElementById("letterText").textContent = letterContent;
