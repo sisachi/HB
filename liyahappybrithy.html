@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>生日快乐 🎂</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: linear-gradient(135deg, #ffd6e7, #fff7c2 50%, #d6f0ff);
+    color: #444;
+    overflow-x: hidden;
+  }
+
+  .screen {
+    min-height: 100vh;
+    display: none;
+    place-items: center;
+    padding: 24px;
+  }
+  .screen.active {
+    display: grid;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 620px;
+    background: rgba(255,255,255,0.88);
+    border-radius: 28px;
+    padding: 36px 28px;
+    box-shadow: 0 18px 60px rgba(0,0,0,0.12);
+    text-align: center;
+    backdrop-filter: blur(8px);
+  }
+
+  h1 {
+    margin: 0 0 12px;
+    color: #e75480;
+    font-size: clamp(28px, 7vw, 44px);
+  }
+  h2 {
+    color: #e75480;
+    margin-top: 0;
+  }
+  p {
+    line-height: 1.8;
+    font-size: 16px;
+  }
+
+  button {
+    border: none;
+    padding: 13px 28px;
+    border-radius: 999px;
+    background: #e75480;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    margin: 8px 4px;
+    box-shadow: 0 6px 18px rgba(231,84,128,0.35);
+    transition: transform .15s, box-shadow .15s;
+  }
+  button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(231,84,128,0.45);
+  }
+  button:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+  }
+
+  /* 小游戏区 */
+  #gameArea {
+    position: relative;
+    height: 260px;
+    margin: 18px 0;
+    border-radius: 20px;
+    background: linear-gradient(180deg, #fff0f6, #fffbe6);
+    overflow: hidden;
+    border: 2px dashed #ffc2d6;
+  }
+  .star {
+    position: absolute;
+    font-size: 34px;
+    cursor: pointer;
+    user-select: none;
+    transition: transform .15s;
+    animation: pop .3s ease-out;
+  }
+  .star:hover { transform: scale(1.2); }
+  @keyframes pop {
+    from { transform: scale(0); }
+    to { transform: scale(1); }
+  }
+  #scoreText {
+    font-size: 18px;
+    color: #e75480;
+    font-weight: bold;
+  }
+
+  /* 时间线 */
+  #timelineScreen .card {
+    max-width: 760px;
+    text-align: left;
+  }
+  .timeline {
+    position: relative;
+    margin-top: 24px;
+    padding-left: 28px;
+    border-left: 3px solid #ffc2d6;
+  }
+  .timeline-item {
+    position: relative;
+    margin-bottom: 30px;
+    padding-left: 16px;
+  }
+  .timeline-item::before {
+    content: "❤";
+    position: absolute;
+    left: -43px;
+    top: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #fff;
+    color: #e75480;
+    display: grid;
+    place-items: center;
+    font-size: 14px;
+    border: 2px solid #ffc2d6;
+  }
+  .timeline-year {
+    font-weight: bold;
+    color: #e75480;
+    margin-bottom: 6px;
+  }
+  .timeline-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 6px;
+  }
+  .timeline-desc {
+    color: #666;
+    line-height: 1.7;
+    margin-bottom: 10px;
+  }
+  .timeline-img {
+    width: 100%;
+    max-width: 320px;
+    border-radius: 14px;
+    display: block;
+    background: #ffe3ee;
+    min-height: 160px;
+    object-fit: cover;
+  }
+
+  /* 最终信 */
+  .letter {
+    text-align: left;
+    background: #fffdf7;
+    border-radius: 18px;
+    padding: 24px;
+    line-height: 2;
+    border: 1px solid #ffe0b8;
+    white-space: pre-wrap;
+  }
+
+  .hint {
+    color: #999;
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+
+<!-- 第1屏：生日贺卡 -->
+<section id="welcomeScreen" class="screen active">
+  <div class="card">
+    <h1>🎂 生日快乐！</h1>
+    <p>这是一份专门为你做的小礼物。</p>
+    <p>先玩一个小游戏，收集 <b>5 颗星星</b>，就能解锁我们的回忆时间线。</p>
+    <button onclick="startGame()">开始收集星星 ⭐</button>
+  </div>
+</section>
+
+<!-- 第2屏：小游戏 -->
+<section id="gameScreen" class="screen">
+  <div class="card">
+    <h2>点击星星收集祝福</h2>
+    <p id="scoreText">已收集：0 / 5</p>
+    <div id="gameArea"></div>
+    <p class="hint">星星会随机出现，点满 5 颗即可解锁回忆。</p>
+  </div>
+</section>
+
+<!-- 第3屏：回忆时间线 -->
+<section id="timelineScreen" class="screen">
+  <div class="card">
+    <h2>我们的回忆时间线</h2>
+    <p class="hint">下面这些，是我想和你一起记住的瞬间。</p>
+    <div class="timeline" id="timeline"></div>
+    <div style="text-align:center; margin-top:20px;">
+      <button onclick="showLetter()">还有一封信 💌</button>
+    </div>
+  </div>
+</section>
+
+<!-- 第4屏：祝福信 -->
+<section id="letterScreen" class="screen">
+  <div class="card">
+    <h2>写给你的话</h2>
+    <div class="letter" id="letterText"></div>
+    <div style="text-align:center; margin-top:20px;">
+      <button onclick="restart()">再看一次 ✨</button>
+    </div>
+  </div>
+</section>
+
+<!-- 可选背景音乐：把 birthday.mp3 放在同目录 -->
+<audio id="bgm" src="birthday.mp3" loop></audio>
+
+<script>
+/* ========== 1. 可替换内容区 ========== */
+const timelineData = [
+  {
+    year: "2026",
+    title: "我们第几次见面",
+    desc: "那天其实有点紧张，但后来发现你聊天特别开心。",
+    img: "photos/1.jpg" // 换成你的照片路径
+  },
+  {
+    year: "2026",
+    title: "一起去了很多地方",
+    desc: "吃了好吃的，拍了很多照片，也留下了很多只有我们懂的梗。",
+    img: "photos/2.jpg"
+  },
+  
+  {
+    year: "今天",
+    title: "生日快乐",
+    desc: "希望以后每一年的生日，我都能有机会对你说一声：生日快乐。",
+    img: "photos/3.jpg"
+  }
+];
+
+const letterContent = `亲爱的你：
+
+生日快乐！
+
+愿你新的一岁，啊哈、healthy、电量满满。
+想做的事都能勇敢去做，想去的地方都能抵达。
+如果偶尔累了，记得还有我。
+
+谢谢你出现在我的生活里。
+希望这个小小的程序，能让你笑一下。`;
+
+/* ========== 2. 屏幕切换 ========== */
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+/* ========== 3. 小游戏 ========== */
+let score = 0;
+const targetScore = 5;
+let gameTimer = null;
+
+function startGame() {
+  score = 0;
+  document.getElementById("scoreText").textContent = `已收集：0 / ${targetScore}`;
+  showScreen("gameScreen");
+  document.getElementById("gameArea").innerHTML = "";
+  spawnStar();
+  // 可选：尝试播放音乐
+  const bgm = document.getElementById("bgm");
+  if (bgm) bgm.play().catch(() => {});
+}
+
+function spawnStar() {
+  const area = document.getElementById("gameArea");
+  if (!area) return;
+  area.innerHTML = "";
+
+  const star = document.createElement("div");
+  star.className = "star";
+  star.textContent = "⭐";
+  star.style.left = Math.random() * 80 + 5 + "%";
+  star.style.top = Math.random() * 70 + 5 + "%";
+  star.onclick = () => {
+    score++;
+    document.getElementById("scoreText").textContent = `已收集：${score} / ${targetScore}`;
+    star.remove();
+
+    if (score >= targetScore) {
+      clearTimeout(gameTimer);
+      setTimeout(unlockTimeline, 500);
+    } else {
+      gameTimer = setTimeout(spawnStar, 500);
+    }
+  };
+
+  area.appendChild(star);
+}
+
+function unlockTimeline() {
+  renderTimeline();
+  showScreen("timelineScreen");
+}
+
+/* ========== 4. 时间线渲染 ========== */
+function renderTimeline() {
+  const box = document.getElementById("timeline");
+  box.innerHTML = timelineData.map(item => `
+    <div class="timeline-item">
+      <div class="timeline-year">${item.year}</div>
+      <div class="timeline-title">${item.title}</div>
+      <div class="timeline-desc">${item.desc}</div>
+      <img class="timeline-img" src="${item.img}" alt="${item.title}"
+           onerror="this.style.display='none'" />
+    </div>
+  `).join("");
+}
+
+/* ========== 5. 信 ========== */
+function showLetter() {
+  document.getElementById("letterText").textContent = letterContent;
+  showScreen("letterScreen");
+  createConfetti(40);
+}
+
+function restart() {
+  showScreen("welcomeScreen");
+}
+
+/* ========== 6. 彩带效果 ========== */
+function createConfetti(count = 20) {
+  const emojis = ["✨", "🎉", "💖", "🌟", "🎈"];
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement("div");
+    el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    el.style.position = "fixed";
+    el.style.left = Math.random() * 100 + "vw";
+    el.style.top = "-30px";
+    el.style.fontSize = Math.random() * 20 + 14 + "px";
+    el.style.pointerEvents = "none";
+    el.style.zIndex = 9999;
+    el.style.transition = "transform 3s linear, opacity 3s";
+    document.body.appendChild(el);
+
+    requestAnimationFrame(() => {
+      el.style.transform = `translateY(${window.innerHeight + 80}px) rotate(${Math.random() * 720}deg)`;
+      el.style.opacity = "0";
+    });
+
+    setTimeout(() => el.remove(), 3300);
+  }
+}
+</script>
+</body>
+</html>
